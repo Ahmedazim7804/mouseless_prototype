@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mouseless/core/controller/keys_controller.dart';
+import 'package:mouseless/models/keybinding.dart';
 import 'package:mouseless/screens/components/sidebar/sidebar.dart';
+import 'package:provider/provider.dart';
 
 class RootScaffold extends StatefulWidget {
   const RootScaffold({super.key, required this.navigationShell});
@@ -12,16 +16,60 @@ class RootScaffold extends StatefulWidget {
 }
 
 class _RootScaffoldState extends State<RootScaffold> {
+  final _focusNode = FocusNode();
+  late final keysController = KeysController<I3Event>(
+    recognizableKeybindings: [
+      Keybinding<I3Event>(
+        keys: {LogicalKeyboardKey.superKey, LogicalKeyboardKey.keyB},
+        type: I3Event.focusLeft,
+      ),
+      Keybinding<I3Event>(
+        keys: {LogicalKeyboardKey.superKey, LogicalKeyboardKey.keyN},
+        type: I3Event.focusDown,
+      ),
+      Keybinding<I3Event>(
+        keys: {LogicalKeyboardKey.superKey, LogicalKeyboardKey.keyM},
+        type: I3Event.focusUp,
+      ),
+      Keybinding<I3Event>(
+        keys: {LogicalKeyboardKey.superKey, LogicalKeyboardKey.comma},
+        type: I3Event.focusRight,
+      ),
+      Keybinding<I3Event>(
+        keys: {
+          LogicalKeyboardKey.superKey,
+          LogicalKeyboardKey.shiftLeft,
+          LogicalKeyboardKey.keyH,
+        },
+        type: I3Event.moveLeft,
+      ),
+    ],
+  );
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: true,
       backgroundColor: Color(0xff141414),
-      body: Row(
-        children: [
-          SidebarWidget(),
-          // widget.navigationShell,
-        ],
+      body: KeyboardListener(
+        focusNode: _focusNode,
+        onKeyEvent: keysController.addKey,
+        child: ChangeNotifierProvider.value(
+          value: keysController,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SidebarWidget(),
+              Expanded(child: widget.navigationShell),
+            ],
+          ),
+        ),
       ),
       // bottomNavigationBar: Theme(
       //   data: Theme.of(context).copyWith(
