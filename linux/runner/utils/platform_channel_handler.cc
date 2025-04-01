@@ -3,6 +3,8 @@
 #include "gdk_window_address.cc"
 #include "set_window_redirect.cc"
 #include "show_hide_window.cc"
+#include "keys/grab_keys.cc"
+#include "keys/ungrab_keyboard.cc"
 
 #include <flutter_linux/flutter_linux.h>
 
@@ -35,6 +37,14 @@ static void platform_channel_method_call_handler(FlMethodChannel *channel, FlMet
     else if (strcmp(method, "hideWindow") == 0)
     {
         response = handle_hide_window(self);
+    }
+    else if (strcmp(method, "grabKeyboard") == 0)
+    {
+        response = handleXGrabKeyboard(self);
+    }
+    else if (strcmp(method, "unGrabKeyboard") == 0)
+    {
+        response = handleXUnGrabKeyboard(self);
     }
     else
     {

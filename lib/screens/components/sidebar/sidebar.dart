@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mouseless/screens/components/app_logo.dart';
 import 'package:mouseless/screens/components/sidebar/sidebar_items.dart';
 
@@ -17,6 +18,20 @@ class SidebarWidget extends StatelessWidget {
           AppLogoWidget(),
           SizedBox(height: 64),
           SidebarItemsListWidget(),
+          ElevatedButton(
+            onPressed: () async {
+              const platform = MethodChannel('com.mouseless.app/pointer');
+              await platform.invokeMethod('grabKeyboard');
+            },
+            child: Text("Grab"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              const platform = MethodChannel('com.mouseless.app/pointer');
+              await platform.invokeMethod('unGrabKeyboard');
+            },
+            child: Text("Ungrab"),
+          ),
         ],
       ),
     );
