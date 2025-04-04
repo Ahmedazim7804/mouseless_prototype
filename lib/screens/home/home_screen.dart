@@ -1,14 +1,11 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:mouseless/core/controller/i3_layout_controller.dart';
 import 'package:mouseless/core/controller/keys_controller.dart';
 import 'package:mouseless/core/extensions.dart';
-import 'package:mouseless/core/i3_manager.dart';
+import 'package:mouseless/core/premade_layouts.dart';
 import 'package:mouseless/models/keybinding.dart';
-import 'package:mouseless/models/simulation.dart';
 import 'package:mouseless/models/window.dart';
-import 'package:collection/collection.dart';
 import 'package:mouseless/screens/components/pressed_keys_list.dart';
 import 'package:provider/provider.dart';
 
@@ -21,6 +18,10 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late StreamSubscription sub;
+  late final I3LayoutController i3LayoutController = I3LayoutController(
+    root: PremadeLayouts.layout1.$1,
+    active: PremadeLayouts.layout1.$2,
+  );
 
   @override
   void initState() {
@@ -29,137 +30,47 @@ class _HomeScreenState extends State<HomeScreen> {
       context,
       listen: false,
     ).streamEvents.listen((event) {
-      final newWindows = switch (event) {
-        I3Event.focusUp => I3Manager.focusUpperWindow(sim.windows),
-        I3Event.focusDown => I3Manager.focusDownWindow(sim.windows),
-        I3Event.focusLeft => I3Manager.focusLeftWindow(sim.windows),
-        I3Event.focusRight => I3Manager.focusRightWindow(sim.windows),
-        I3Event.moveLeft => I3Manager.moveWindowLeft(sim.windows),
-      };
-
-      setState(() {
-        sim = sim.copyWith(windows: newWindows);
-      });
+      if (event == I3Event.focusLeft) {
+        i3LayoutController.focusLeft();
+      } else if (event == I3Event.focusRight) {
+        i3LayoutController.focusRight();
+      } else if (event == I3Event.focusUp) {
+        i3LayoutController.focusUp();
+      } else if (event == I3Event.focusDown) {
+        i3LayoutController.focusDown();
+      }
     });
   }
 
-  SimulationModel sim = SimulationModel(
-    title: "Current",
-    windows: [
-      Window(
-        id: 0,
-        isActive: false,
-        row: 0,
-        col: 0,
-        strechRows: 0,
-        strechCols: 0,
-      ),
-      Window(
-        id: 1,
-        isActive: false,
-        row: 0,
-        col: 1,
-        strechRows: 0,
-        strechCols: 0,
-      ),
-      Window(
-        id: 2,
-        isActive: false,
-        row: 0,
-        col: 2,
-        strechRows: 0,
-        strechCols: 0,
-      ),
-      Window(
-        id: 3,
-        isActive: false,
-        row: 0,
-        col: 3,
-        strechRows: 1,
-        strechCols: 0,
-      ),
-      Window(
-        id: 4,
-        isActive: true,
-        row: 1,
-        col: 0,
-        strechRows: 0,
-        strechCols: 1,
-      ),
-    ],
-  );
-
-  final simAchieve = SimulationModel(
-    title: "Achieve",
-    windows: [
-      Window(
-        id: 0,
-        isActive: false,
-        row: 0,
-        col: 0,
-        strechRows: 0,
-        strechCols: 0,
-      ),
-      Window(
-        id: 1,
-        isActive: false,
-        row: 0,
-        col: 1,
-        strechRows: 0,
-        strechCols: 0,
-      ),
-      Window(
-        id: 2,
-        isActive: false,
-        row: 0,
-        col: 2,
-        strechRows: 0,
-        strechCols: 0,
-      ),
-      Window(
-        id: 3,
-        isActive: false,
-        row: 0,
-        col: 3,
-        strechRows: 0,
-        strechCols: 0,
-      ),
-      Window(
-        id: 4,
-        isActive: true,
-        row: 1,
-        col: 0,
-        strechRows: 0,
-        strechCols: 3,
-      ),
-    ],
-  );
-
   @override
   void dispose() {
+    i3LayoutController.dispose();
     sub.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // return SizedBox(
-    //   height: 400,
-    //   width: 400,
-    //   child: SimulationWindowsGridWidget(simulation: sim),
-    // );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text("Simulation"),
         Expanded(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            mainAxisSize: MainAxisSize.max,
-            children: [
-              _Simulation(simulation: sim),
-              _Simulation(simulation: simAchieve),
-            ].spacedBy(width: 16),
+          child: ChangeNotifierProvider.value(
+            value: i3LayoutController,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisSize: MainAxisSize.max,
+              children: [
+                _Simulation(),
+                _Simulation(
+                  fixedLayout: (
+                    i3LayoutController.root,
+                    i3LayoutController.active,
+                  ),
+                ),
+              ].spacedBy(width: 16),
+            ),
           ),
         ),
         SizedBox(
@@ -225,9 +136,14 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 class SimulationWindowsGridWidget extends StatefulWidget {
-  const SimulationWindowsGridWidget({super.key, required this.simulation});
+  const SimulationWindowsGridWidget({
+    super.key,
+    required this.root,
+    required this.active,
+  });
 
-  final SimulationModel simulation;
+  final LayoutNode root;
+  final WindowNode active;
 
   @override
   State<SimulationWindowsGridWidget> createState() =>
@@ -238,69 +154,74 @@ class _SimulationWindowsGridWidgetState
     extends State<SimulationWindowsGridWidget> {
   @override
   Widget build(BuildContext context) {
-    return Builder(
-      builder: (_) {
-        late List<Window> sortedWindows = widget.simulation.windows.sorted((
-          a,
-          b,
-        ) {
-          if (a.row == b.row) {
-            return a.col - b.col;
-          } else {
-            return a.row - b.row;
-          }
-        });
-        final maxRows = sortedWindows
-            .map((e) => e.row + e.strechRows + 1)
-            .reduce((a, b) => a > b ? a : b);
-
-        final maxCols = sortedWindows
-            .map((e) => e.col + e.strechCols + 1)
-            .reduce((a, b) => a > b ? a : b);
-
-        // build the grid
-        return Expanded(
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: LayoutBuilder(
-              builder: (context, con) {
-                return StaggeredGrid.count(
-                  axisDirection: AxisDirection.down,
-                  crossAxisCount: maxCols,
-                  crossAxisSpacing: 4,
-                  mainAxisSpacing: 4,
+    return Expanded(
+      child: Builder(
+        builder: (_) {
+          if (widget.root is WindowNode) {
+            final window = widget.root as WindowNode;
+            return _WindowWidget(
+              id: window.window,
+              isActive: window.id == widget.active.id,
+            );
+          } else if (widget.root is ContainerNode) {
+            if ((widget.root as ContainerNode).axis == LayoutAxis.horizontal) {
+              return Container(
+                padding: EdgeInsets.all(8),
+                color: Color.fromARGB(
+                  255,
+                  ((widget.root.id + 1) * 100) % 255,
+                  ((widget.root.id + 1) * 200) % 255,
+                  ((widget.root.id + 1) * 300) % 255,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.max,
                   children:
-                      sortedWindows
+                      widget.root.children
                           .map(
-                            (window) => StaggeredGridTile.extent(
-                              crossAxisCellCount: window.strechCols + 1,
-                              mainAxisExtent:
-                                  ((con.maxHeight / maxRows) - 2) *
-                                  (window.strechRows + 1),
-                              child: _WindowWidget(window: window),
+                            (e) => SimulationWindowsGridWidget(
+                              root: e,
+                              active: widget.active,
                             ),
                           )
                           .toList(),
-                );
-              },
-            ),
-          ),
-        );
-      },
+                ),
+              );
+            } else {
+              return Container(
+                padding: EdgeInsets.all(8),
+                color: Color.fromARGB(
+                  255,
+                  ((widget.root.id + 1) * 100) % 255,
+                  ((widget.root.id + 1) * 200) % 255,
+                  ((widget.root.id + 1) * 300) % 255,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.max,
+                  children:
+                      widget.root.children
+                          .map(
+                            (e) => SimulationWindowsGridWidget(
+                              root: e,
+                              active: widget.active,
+                            ),
+                          )
+                          .toList(),
+                ),
+              );
+            }
+          }
+
+          return SizedBox.shrink();
+        },
+      ),
     );
   }
 }
 
 class _Simulation extends StatelessWidget {
-  const _Simulation({
-    super.key,
-    required this.simulation,
-    // required this.maxWidth,
-    // required this.minWidth,
-  });
-  // final double minWidth;
-  // final double maxWidth;
-  final SimulationModel simulation;
+  const _Simulation({super.key, this.fixedLayout});
+
+  final (LayoutNode root, WindowNode active)? fixedLayout;
 
   @override
   Widget build(BuildContext context) {
@@ -309,7 +230,7 @@ class _Simulation extends StatelessWidget {
         mainAxisSize: MainAxisSize.max,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(simulation.title, style: TextStyle(fontSize: 20)),
+          Text("Current", style: TextStyle(fontSize: 20)),
           Expanded(
             child: Container(
               decoration: BoxDecoration(
@@ -336,7 +257,24 @@ class _Simulation extends StatelessWidget {
                           style: TextStyle(color: Colors.black),
                         ),
                       ),
-                      SimulationWindowsGridWidget(simulation: simulation),
+                      Builder(
+                        builder: (_) {
+                          if (fixedLayout != null) {
+                            return SimulationWindowsGridWidget(
+                              root: fixedLayout!.$1,
+                              active: fixedLayout!.$2,
+                            );
+                          }
+                          return Consumer<I3LayoutController>(
+                            builder: (_, controller, ___) {
+                              return SimulationWindowsGridWidget(
+                                active: controller.active,
+                                root: controller.root,
+                              );
+                            },
+                          );
+                        },
+                      ),
                     ],
                   );
                 },
@@ -350,20 +288,22 @@ class _Simulation extends StatelessWidget {
 }
 
 class _WindowWidget extends StatelessWidget {
-  const _WindowWidget({super.key, required this.window});
+  const _WindowWidget({super.key, required this.id, required this.isActive});
 
-  final Window window;
+  final String id;
+  final bool isActive;
 
   @override
   Widget build(BuildContext context) {
-    final text = "Window ${window.id}${window.isActive ? " *" : ""}";
+    if (isActive) {
+      print("Active window: $id");
+    }
+    final text = "$id${isActive ? " *" : ""}";
     return Container(
       alignment: Alignment.center,
       decoration: BoxDecoration(
         border:
-            window.isActive
-                ? Border.all(color: Color(0xff3B98E4), width: 2)
-                : null,
+            isActive ? Border.all(color: Color(0xff3B98E4), width: 2) : null,
         color: Color(0xff181818).withValues(alpha: 0.75),
         borderRadius: BorderRadius.circular(8),
       ),
