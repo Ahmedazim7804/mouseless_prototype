@@ -22,33 +22,31 @@ class PremadeLayouts {
 
   static WindowNode get layout1 {
     final layout = RootNode(
-      id: 1,
       axis: LayoutAxis.vertical,
       children: [
-        WindowNode(window: '1', id: 2, parent: null),
+        WindowNode(window: '1', parent: null),
         ContainerNode(
           axis: LayoutAxis.vertical,
-          id: 3,
           children: [
-            WindowNode(window: '2', id: 4, parent: null),
-            WindowNode(window: '3', id: 5, parent: null),
+            WindowNode(window: '2', parent: null),
+            WindowNode(window: '3', parent: null),
             ContainerNode(
               axis: LayoutAxis.horizontal,
               id: 6,
               children: [
-                WindowNode(window: '4', id: 7, parent: null),
-                WindowNode(window: '5', id: 8, parent: null),
+                WindowNode(window: '4', parent: null),
+                WindowNode(window: '5', parent: null),
                 ContainerNode(
                   axis: LayoutAxis.horizontal,
                   id: 9,
                   children: [
-                    WindowNode(window: '6', id: 10, parent: null),
+                    WindowNode(window: '6', parent: null),
                     ContainerNode(
                       axis: LayoutAxis.vertical,
-                      id: 11,
+
                       children: [
-                        WindowNode(window: '7', id: 12, parent: null),
-                        WindowNode(window: '8', id: 13, parent: null),
+                        WindowNode(window: '7', parent: null),
+                        WindowNode(window: '8', parent: null),
                       ],
                       parent: null,
                     ),
@@ -64,7 +62,7 @@ class PremadeLayouts {
       ],
     );
 
-    final activateWindow = getWindowById(layout, 7);
+    final activateWindow = getWindowById(layout, 4);
 
     return activateWindow!;
   }

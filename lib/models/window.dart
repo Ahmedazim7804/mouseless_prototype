@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-int globalId = 1000;
+int globalId = 1;
 
 enum NodeType { window, horizontalContainer, verticalContainer, root }
 
@@ -9,7 +9,8 @@ abstract class LayoutNode extends Equatable {
   final List<LayoutNode> children;
   final int id;
 
-  LayoutNode({this.parent, this.children = const [], required this.id});
+  LayoutNode({this.parent, this.children = const [], int? id})
+    : id = id ?? globalId++;
 
   @override
   List<Object?> get props => [
@@ -26,7 +27,7 @@ enum LayoutDirection { left, right, up, down }
 class WindowNode extends LayoutNode {
   final String window;
 
-  WindowNode({required super.id, required this.window, required super.parent})
+  WindowNode({super.id, required this.window, required super.parent})
     : super(children: const []);
 
   @override
@@ -53,8 +54,8 @@ class ContainerNode extends LayoutNode {
   LayoutAxis axis;
   @override
   ContainerNode({
+    super.id,
     required this.axis,
-    required super.id,
     required super.children,
     required super.parent,
   }) {
@@ -65,7 +66,7 @@ class ContainerNode extends LayoutNode {
 }
 
 class RootNode extends ContainerNode {
-  RootNode({required super.id, required super.axis, required super.children})
+  RootNode({super.id, required super.axis, required super.children})
     : super(parent: null);
 }
 

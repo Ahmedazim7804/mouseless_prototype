@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:uuid/v4.dart';
 import 'package:mouseless/models/window.dart';
 
 class I3LayoutController extends ChangeNotifier {
@@ -70,14 +69,38 @@ class I3LayoutController extends ChangeNotifier {
     return null;
   }
 
-  WindowNode? findFirstWindowChild(ContainerNode start) {
-    for (final child in start.children) {
-      if (child is WindowNode) {
-        return child;
-      } else if (child is ContainerNode) {
-        final found = findFirstWindowChild(child);
-        if (found != null) {
-          return found;
+  WindowNode? findFirstWindowChild(
+    ContainerNode start, {
+    bool forward = true,
+    int? startWith,
+  }) {
+    final startIndex = startWith ?? (forward ? 0 : start.children.length - 1);
+
+    if (forward) {
+      for (int i = 0; i < start.children.length; i++) {
+        final index = (startIndex + i) % start.children.length;
+        final child = start.children[index];
+        if (child is WindowNode) {
+          return child;
+        } else if (child is ContainerNode) {
+          final found = findFirstWindowChild(child, forward: forward);
+          if (found != null) {
+            return found;
+          }
+        }
+      }
+    } else {
+      for (int i = 0; i < start.children.length; i++) {
+        final index =
+            (startIndex - i + start.children.length) % start.children.length;
+        final child = start.children[index];
+        if (child is WindowNode) {
+          return child;
+        } else if (child is ContainerNode) {
+          final found = findFirstWindowChild(child, forward: forward);
+          if (found != null) {
+            return found;
+          }
         }
       }
     }
@@ -122,49 +145,174 @@ class I3LayoutController extends ChangeNotifier {
   }) {
     final len = active.parent.children.length;
 
-    final index = active.parent.children.indexWhere(
+    int index = active.parent.children.indexWhere(
       (element) => element.id == active.id,
     );
-    if (active.parent.parent?.axis == axis &&
-        index ==
-            switch (direction) {
-              LayoutDirection.left => 0,
-              LayoutDirection.up => 0,
-              LayoutDirection.down => len,
-              LayoutDirection.right => len,
-            }) {
-      final grandParent = _findGrandParentWithAxis(axis, node: active)?.$1;
+    final bool forward = switch (direction) {
+      LayoutDirection.left => false,
+      LayoutDirection.right => true,
+      LayoutDirection.up => false,
+      LayoutDirection.down => true,
+    };
 
-      if (grandParent != null) {
-        final firstChild = findFirstWindowChild(grandParent);
+    /*
+    CASES
+      1. Active's parent's axis is same as the axis in which we are shifting focus
+        1.1 Active is not at extreme end of its parent
+          SOLUTION => i get the closest node in the direction and set it as active
+        1.2 Active is at extreme end of its parent
+          SOLUTION => a. if active's parent is root node, return (because we are at the end of the layout)
+                      b. find the grand parent with same axis
+                      c. if found, move active to the grand parent
+                      d. if not found, create a new root with the axis in which we are trying to move, and make the old root a child of the new root
+      2. Active's parent's axis is different from the axis in which we are shifting focus
+    */
 
-        if (firstChild != null) {
-          active = firstChild;
+    // CASE 1
+    if (active.parent.axis == axis) {
+      // CASE 1.1
+      if (index !=
+          switch (direction) {
+            LayoutDirection.left => 0,
+            LayoutDirection.up => 0,
+            LayoutDirection.down => len - 1,
+            LayoutDirection.right => len - 1,
+          }) {
+        final res = findNodeClosestToIndex(
+          active,
+          active.parent,
+          direction,
+          wrap: false,
+        );
+
+        if (res.$2 < 0 || res.$2 >= len) {
+          return;
         }
-      }
-    } else if (active.parent.axis == axis) {
-      final closest =
-          findNodeClosestToIndex(active, active.parent, direction).$1;
 
-      if (closest is WindowNode) {
-        active = closest;
+        if (res.$1 is WindowNode) {
+          active = res.$1 as WindowNode;
+        } else {
+          final windowInClosest = findFirstWindowChild(res.$1 as ContainerNode);
+          if (windowInClosest != null) {
+            active = windowInClosest;
+          }
+        }
       } else {
-        final windowInClosest = findFirstWindowChild(closest as ContainerNode);
-        if (windowInClosest != null) {
-          active = windowInClosest;
+        // CASE 1.2
+        if (active.parent is RootNode) {
+          var (closest, closestIndex) = findNodeClosestToIndex(
+            active,
+            active.parent,
+            direction,
+            wrap: true,
+          );
+
+          while (closest is! WindowNode) {
+            final res = findFirstWindowChild(closest as ContainerNode);
+            if (res != null) {
+              closest = res;
+            } else {
+              return;
+            }
+          }
+
+          active = closest;
+        } else {
+          final grandParent = _findGrandParentWithAxis(axis, node: active);
+
+          if (grandParent != null) {
+            final firstChild = findFirstWindowChild(
+              grandParent.$1,
+              forward: forward,
+              startWith: grandParent.$2 + (forward ? 1 : -1),
+            );
+
+            if (firstChild != null) {
+              active = firstChild;
+            }
+          }
         }
       }
     } else {
-      final parent = _findParentWithAxisRecursively(axis, node: active);
+      // CASE 2
+      final parentRes = _findGrandParentWithAxis(axis, node: active);
 
-      if (parent != null) {
-        final firstChild = findFirstWindowChild(parent);
+      if (parentRes != null) {
+        final firstChild = findFirstWindowChild(
+          parentRes.$1,
+          forward: forward,
+          startWith: parentRes.$2 + (forward ? 1 : -1),
+        );
 
         if (firstChild != null) {
           active = firstChild;
         }
+      } else {
+        // no parent with same axis found till root
+        return;
       }
     }
+
+    // // CASE 1.2
+    // if (active.parent.parent?.axis == axis &&
+    //     index ==
+    //         switch (direction) {
+    //           LayoutDirection.left => 0,
+    //           LayoutDirection.up => 0,
+    //           LayoutDirection.down => len - 1,
+    //           LayoutDirection.right => len - 1,
+    //         }) {
+    //   if (active.parent is RootNode) {
+    //     LayoutNode? closest =
+    //         findNodeClosestToIndex(
+    //           active,
+    //           active.parent,
+    //           direction,
+    //           wrap: true,
+    //         ).$1;
+
+    //     while (closest is! WindowNode) {
+    //       closest = findFirstWindowChild(closest as ContainerNode);
+    //       if (closest == null) {
+    //         return;
+    //       }
+    //     }
+
+    //     active = closest;
+    //   } else {
+    //     final grandParent = _findGrandParentWithAxis(axis, node: active)?.$1;
+
+    //     if (grandParent != null) {
+    //       final firstChild = findFirstWindowChild(grandParent);
+
+    //       if (firstChild != null) {
+    //         active = firstChild;
+    //       }
+    //     }
+    //   }
+    // } else if (active.parent.axis == axis) {
+    //   final closest =
+    //       findNodeClosestToIndex(active, active.parent, direction).$1;
+
+    //   if (closest is WindowNode) {
+    //     active = closest;
+    //   } else {
+    //     final windowInClosest = findFirstWindowChild(closest as ContainerNode);
+    //     if (windowInClosest != null) {
+    //       active = windowInClosest;
+    //     }
+    //   }
+    // } else {
+    //   final parent = _findParentWithAxisRecursively(axis, node: active);
+
+    //   if (parent != null) {
+    //     final firstChild = findFirstWindowChild(parent);
+
+    //     if (firstChild != null) {
+    //       active = firstChild;
+    //     }
+    //   }
+    // }
   }
 
   void focusDown() {
@@ -282,7 +430,7 @@ class I3LayoutController extends ChangeNotifier {
        1.1 active is not at extreme end of its parent
          SOLUTION => i get the closest node in the direction and swap with it
        1.2 active is at extreme end of its parent
-         SOLUTION => // a. if active's parent is root node, return (because we are at the end of the layout)
+         SOLUTION => a. if active's parent is root node, return (because we are at the end of the layout)
                      b. find the grand parent with same axis
                      c. if found, move active to the grand parent
                      d. if not found, create a new root with the axis in which we are trying to move, and make the old root a child of the new root
