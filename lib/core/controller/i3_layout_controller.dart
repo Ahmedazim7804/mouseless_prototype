@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:uuid/v4.dart';
 import 'package:mouseless/models/window.dart';
 
 class I3LayoutController extends ChangeNotifier {
@@ -87,24 +88,29 @@ class I3LayoutController extends ChangeNotifier {
   (LayoutNode, int) findNodeClosestToIndex(
     WindowNode node,
     ContainerNode container,
-    LayoutDirection direction,
-  ) {
+    LayoutDirection direction, {
+    bool wrap = true,
+  }) {
     final index = node.parent.children.indexOf(node);
 
     final children = container.children;
     final len = children.length;
 
-    late final int newIndex;
+    late int newIndex;
 
     switch (direction) {
       case LayoutDirection.left:
-        newIndex = (index - 1) % len;
+        newIndex = (index - 1);
       case LayoutDirection.right:
-        newIndex = (index + 1) % len;
+        newIndex = (index + 1);
       case LayoutDirection.up:
-        newIndex = (index - 1) % len;
+        newIndex = (index - 1);
       case LayoutDirection.down:
-        newIndex = (index + 1) % len;
+        newIndex = (index + 1);
+    }
+
+    if (wrap) {
+      newIndex = newIndex % len;
     }
 
     return (children[newIndex], newIndex);
@@ -215,7 +221,7 @@ class I3LayoutController extends ChangeNotifier {
 
         bool modified = false;
 
-        if (current is ContainerNode) {
+        if (current is ContainerNode && current is! RootNode) {
           if (current.children.isEmpty) {
             current.parent?.children.remove(current);
             modified = true;
@@ -242,19 +248,29 @@ class I3LayoutController extends ChangeNotifier {
     }
   }
 
-  void moveRight() {
+  void _moveWindow({
+    required LayoutAxis axis,
+    required LayoutDirection direction,
+  }) {
     final len = active.parent.children.length;
     final index = active.parent.children.indexWhere(
       (element) => element.id == active.id,
     );
 
     // not last child in its parent and parent is horizontal
-    if (active.parent.axis == LayoutAxis.horizontal && index != len - 1) {
-      final res = findNodeClosestToIndex(
-        active,
-        active.parent,
-        LayoutDirection.right,
-      );
+    if (active.parent.axis == axis &&
+        index !=
+            switch (direction) {
+              LayoutDirection.left => 0,
+              LayoutDirection.up => 0,
+              LayoutDirection.down => len - 1,
+              LayoutDirection.right => len - 1,
+            }) {
+      final res = findNodeClosestToIndex(active, active.parent, direction);
+
+      if (res.$2 < 0 || res.$2 >= len) {
+        return;
+      }
 
       if (res.$1 is ContainerNode) {
         _removeNodeFromParent(active);
@@ -265,53 +281,88 @@ class I3LayoutController extends ChangeNotifier {
         active.parent.children[res.$2] = active;
       }
     } else {
-      final result = _findGrandParentWithAxis(
-        LayoutAxis.horizontal,
-        node: active,
-      );
+      final result = _findGrandParentWithAxis(axis, node: active);
 
       final grandParent = result?.$1;
       final indexOfAncestorContainerActiveWindowParentInGrandParent =
           result?.$2;
 
+      // no parent with same axis found till root, grandparent is the root and has different axis
       if (grandParent == null) {
-        return;
-      }
-
-      final ancestor =
-          grandParent
-              .children[indexOfAncestorContainerActiveWindowParentInGrandParent!];
-
-      if (ancestor.id == active.parent.id ||
-          indexOfAncestorContainerActiveWindowParentInGrandParent ==
-              grandParent.children.length - 1) {
-        _removeNodeFromParent(active);
-        grandParent.children.add(active..parent = grandParent);
-        active = grandParent.children.last as WindowNode;
-      } else {
-        final sibling =
-            grandParent
-                .children[indexOfAncestorContainerActiveWindowParentInGrandParent +
-                1];
-        final newContainer = ContainerNode(
-          axis: LayoutAxis.horizontal,
-          id: grandParent.children.length,
-          parent: grandParent,
-          children: [active, sibling],
+        globalId++;
+        final newContainerNode = ContainerNode(
+          axis: axis,
+          id: globalId,
+          parent: root,
+          children: root.children,
         );
 
-        grandParent
-                .children[indexOfAncestorContainerActiveWindowParentInGrandParent +
-                1] =
-            newContainer;
+        root.children.clear();
+        root.children.add(newContainerNode);
+        root.children.add(active..parent = newContainerNode);
 
-        active = newContainer.children[0] as WindowNode;
+        active = root.children.last as WindowNode;
+      } else {
+        final ancestor =
+            grandParent
+                .children[indexOfAncestorContainerActiveWindowParentInGrandParent!];
+
+        if (ancestor.id == active.parent.id ||
+            indexOfAncestorContainerActiveWindowParentInGrandParent ==
+                grandParent.children.length - 1) {
+          _removeNodeFromParent(active);
+          grandParent.children.add(active..parent = grandParent);
+          active = grandParent.children.last as WindowNode;
+        } else {
+          final sibling =
+              grandParent
+                  .children[indexOfAncestorContainerActiveWindowParentInGrandParent +
+                  1];
+          final newContainer = ContainerNode(
+            axis: axis,
+            id: grandParent.children.length,
+            parent: grandParent,
+            children: [active, sibling],
+          );
+
+          grandParent
+                  .children[indexOfAncestorContainerActiveWindowParentInGrandParent +
+                  1] =
+              newContainer;
+
+          active = newContainer.children[0] as WindowNode;
+        }
       }
     }
 
     // last child in its parent or parent is vertical
 
     _cleanLayout(root);
+  }
+
+  void moveRight() {
+    _moveWindow(axis: LayoutAxis.horizontal, direction: LayoutDirection.right);
+    notifyListeners();
+  }
+
+  void moveLeft() {
+    _moveWindow(axis: LayoutAxis.horizontal, direction: LayoutDirection.left);
+    notifyListeners();
+  }
+
+  void moveDown() {
+    _moveWindow(axis: LayoutAxis.vertical, direction: LayoutDirection.down);
+    notifyListeners();
+  }
+
+  void moveUp() {
+    _moveWindow(axis: LayoutAxis.vertical, direction: LayoutDirection.up);
+    notifyListeners();
+  }
+
+  void setNewLayout(LayoutNode activeNode) {
+    assert(activeNode is WindowNode);
+    active = activeNode as WindowNode;
     notifyListeners();
   }
 }

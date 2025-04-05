@@ -18,19 +18,49 @@ class SidebarWidget extends StatelessWidget {
           AppLogoWidget(),
           SizedBox(height: 64),
           SidebarItemsListWidget(),
-          ElevatedButton(
-            onPressed: () async {
-              const platform = MethodChannel('com.mouseless.app/pointer');
-              await platform.invokeMethod('grabKeyboard');
-            },
-            child: Text("Grab"),
+          Spacer(),
+          Container(
+            height: 32,
+            constraints: BoxConstraints(maxWidth: 128),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.rectangle,
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Colors.white, Color(0xff828282)],
+              ),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: TextButton(
+              onPressed: () async {
+                const platform = MethodChannel('com.mouseless.app/pointer');
+                await platform.invokeMethod('grabKeyboard');
+              },
+              child: Text("Grab", style: TextStyle(color: Colors.black)),
+            ),
           ),
-          ElevatedButton(
-            onPressed: () async {
-              const platform = MethodChannel('com.mouseless.app/pointer');
-              await platform.invokeMethod('unGrabKeyboard');
-            },
-            child: Text("Ungrab"),
+          SizedBox(height: 16),
+          Container(
+            height: 32,
+            constraints: BoxConstraints(maxWidth: 128),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.rectangle,
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Colors.white, Color(0xff828282)],
+              ),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: TextButton(
+              onPressed: () async {
+                const platform = MethodChannel('com.mouseless.app/pointer');
+                await platform.invokeMethod('unGrabKeyboard');
+              },
+              child: Text("Ungrab", style: TextStyle(color: Colors.black)),
+            ),
           ),
         ],
       ),

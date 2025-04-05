@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:mouseless/core/controller/i3_layout_controller.dart';
 import 'package:mouseless/core/controller/keys_controller.dart';
 import 'package:mouseless/core/extensions.dart';
@@ -34,9 +35,17 @@ class _HomeScreenState extends State<HomeScreen> {
       } else if (event == I3Event.focusRight) {
         i3LayoutController.focusRight();
       } else if (event == I3Event.focusUp) {
-        i3LayoutController.moveRight();
+        i3LayoutController.focusUp();
       } else if (event == I3Event.focusDown) {
         i3LayoutController.focusDown();
+      } else if (event == I3Event.moveLeft) {
+        i3LayoutController.moveLeft();
+      } else if (event == I3Event.moveRight) {
+        i3LayoutController.moveRight();
+      } else if (event == I3Event.moveUp) {
+        i3LayoutController.moveUp();
+      } else if (event == I3Event.moveDown) {
+        i3LayoutController.moveDown();
       }
     });
   }
@@ -50,86 +59,76 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text("Simulation"),
-        Expanded(
-          child: ChangeNotifierProvider.value(
-            value: i3LayoutController,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              mainAxisSize: MainAxisSize.max,
-              children: [
-                _Simulation(),
-                _Simulation(
-                  fixedLayout: (
-                    i3LayoutController.root,
-                    i3LayoutController.active,
-                  ),
-                ),
-              ].spacedBy(width: 16),
-            ),
-          ),
-        ),
-        SizedBox(
-          width: double.infinity,
-          height: 200,
-          child: Row(
-            mainAxisSize: MainAxisSize.max,
-            mainAxisAlignment: MainAxisAlignment.center,
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              SizedBox(height: 64, child: PressedKeysListWidget()),
-              // Expanded(
-              //   child: LayoutBuilder(
-              //     builder: (context, con) {
-              //       return Container(
-              //         alignment: Alignment.center,
-              //         width: con.maxWidth,
-              //         height: 64,
-              //         child: PressedKeysListWidget(),
-              //       );
-              //     },
-              //   ),
-              // ),
-              // Container(
-              //   color: Colors.blue,
-              //   height: 200,
-              //   // width: 400,
-              // ),
+              Text("Simulation", style: GoogleFonts.suezOne(fontSize: 24)),
+              Container(
+                height: 32,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  shape: BoxShape.rectangle,
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.white, Color(0xff828282)],
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: TextButton(
+                  onPressed: () {
+                    i3LayoutController.setNewLayout(PremadeLayouts.layout1);
+                  },
+                  child: Text("Reset", style: TextStyle(color: Colors.black)),
+                ),
+              ),
             ],
           ),
-        ),
-        // Row(
-        //   crossAxisAlignment: CrossAxisAlignment.center,
-        //   children: [
-        //     Column(children: [Text("History", style: TextStyle(fontSize: 20))]),
-        //     SizedBox(height: 200, width: 400, child: PressedKeysListWidget()),
-        //     // Expanded(
-        //     //   child: Wrap(
-        //     //     alignment: WrapAlignment.center,
-        //     //     runAlignment: WrapAlignment.center,
-        //     //     crossAxisAlignment: WrapCrossAlignment.center,
-        //     //     children: keysController.pressedKeys
-        //     //         .map(
-        //     //           (e) => AnimatedOpacity(
-        //     //             opacity: 1,
-        //     //             duration: Duration(milliseconds: 200),
-        //     //             child: KeyboardKeyWidget(
-        //     //               isPressed: true,
-        //     //               keyText: e.keyLabel,
-        //     //               logicalKeyEquivalent: {e},
-        //     //             ),
-        //     //           ),
-        //     //         )
-        //     //         .toList()
-        //     //         .spacedBy(widget: const KeyboardKeyPlus())
-        //     //         .spacedBy(width: 16),
-        //     //   ),
-        //     // ),
-        //   ],
-        // ),
-      ],
+          Expanded(
+            flex: 5,
+            child: ChangeNotifierProvider.value(
+              value: i3LayoutController,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisSize: MainAxisSize.max,
+                children: [
+                  _Simulation(),
+                  _Simulation(
+                    fixedLayout: (
+                      i3LayoutController.root,
+                      i3LayoutController.active,
+                    ),
+                  ),
+                ].spacedBy(width: 16),
+              ),
+            ),
+          ),
+          Flexible(
+            flex: 1,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Column(
+                  children: [Text("History", style: TextStyle(fontSize: 20))],
+                ),
+                Expanded(
+                  child: LayoutBuilder(
+                    builder: (context, con) {
+                      return Center(child: PressedKeysListWidget());
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ].spacedBy(height: 16),
+      ),
     );
   }
 }
@@ -154,64 +153,50 @@ class _SimulationWindowsGridWidgetState
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: Builder(
-        builder: (_) {
-          if (widget.root is WindowNode) {
-            final window = widget.root as WindowNode;
-            return _WindowWidget(
-              id: window.window,
-              isActive: window.id == widget.active.id,
-            );
-          } else if (widget.root is ContainerNode) {
-            if ((widget.root as ContainerNode).axis == LayoutAxis.horizontal) {
-              return Container(
-                padding: EdgeInsets.all(8),
-                color: Color.fromARGB(
-                  255,
-                  ((widget.root.id + 1) * 100) % 255,
-                  ((widget.root.id + 1) * 200) % 255,
-                  ((widget.root.id + 1) * 300) % 255,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.max,
-                  children:
-                      widget.root.children
-                          .map(
-                            (e) => SimulationWindowsGridWidget(
-                              root: e,
-                              active: widget.active,
-                            ),
-                          )
-                          .toList(),
-                ),
+      child: Padding(
+        padding: EdgeInsets.all(widget.root is RootNode ? 8 : 0),
+        child: Builder(
+          builder: (_) {
+            if (widget.root is WindowNode) {
+              final window = widget.root as WindowNode;
+              return _WindowWidget(
+                id: window.window,
+                isActive: window.id == widget.active.id,
               );
-            } else {
-              return Container(
-                padding: EdgeInsets.all(8),
-                color: Color.fromARGB(
-                  255,
-                  ((widget.root.id + 1) * 100) % 255,
-                  ((widget.root.id + 1) * 200) % 255,
-                  ((widget.root.id + 1) * 300) % 255,
-                ),
-                child: Column(
+            } else if (widget.root is ContainerNode) {
+              if ((widget.root as ContainerNode).axis ==
+                  LayoutAxis.horizontal) {
+                return Row(
                   mainAxisSize: MainAxisSize.max,
-                  children:
-                      widget.root.children
-                          .map(
-                            (e) => SimulationWindowsGridWidget(
-                              root: e,
-                              active: widget.active,
-                            ),
-                          )
-                          .toList(),
-                ),
-              );
+                  children: widget.root.children
+                      .map(
+                        (e) => SimulationWindowsGridWidget(
+                          root: e,
+                          active: widget.active,
+                        ),
+                      )
+                      .toList()
+                      .spacedBy(width: 4),
+                );
+              } else {
+                return Column(
+                  mainAxisSize: MainAxisSize.max,
+                  children: widget.root.children
+                      .map(
+                        (e) => SimulationWindowsGridWidget(
+                          root: e,
+                          active: widget.active,
+                        ),
+                      )
+                      .toList()
+                      .spacedBy(height: 4),
+                );
+              }
             }
-          }
 
-          return SizedBox.shrink();
-        },
+            return SizedBox.shrink();
+          },
+        ),
       ),
     );
   }
@@ -229,7 +214,10 @@ class _Simulation extends StatelessWidget {
         mainAxisSize: MainAxisSize.max,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("Current", style: TextStyle(fontSize: 20)),
+          Text(
+            fixedLayout == null ? "Current" : "Achieve",
+            style: TextStyle(fontSize: 20),
+          ),
           Expanded(
             child: Container(
               decoration: BoxDecoration(
@@ -294,9 +282,6 @@ class _WindowWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (isActive) {
-      print("Active window: $id");
-    }
     final text = "$id${isActive ? " *" : ""}";
     return Container(
       alignment: Alignment.center,

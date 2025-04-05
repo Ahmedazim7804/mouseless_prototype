@@ -36,12 +36,20 @@ class _RootScaffoldState extends State<RootScaffold> {
         type: I3Event.focusRight,
       ),
       Keybinding<I3Event>(
-        keys: {
-          LogicalKeyboardKey.superKey,
-          LogicalKeyboardKey.shiftLeft,
-          LogicalKeyboardKey.keyH,
-        },
+        keys: {LogicalKeyboardKey.superKey, LogicalKeyboardKey.minus},
         type: I3Event.moveLeft,
+      ),
+      Keybinding<I3Event>(
+        keys: {LogicalKeyboardKey.superKey, LogicalKeyboardKey.equal},
+        type: I3Event.moveRight,
+      ),
+      Keybinding<I3Event>(
+        keys: {LogicalKeyboardKey.superKey, LogicalKeyboardKey.bracketLeft},
+        type: I3Event.moveUp,
+      ),
+      Keybinding<I3Event>(
+        keys: {LogicalKeyboardKey.superKey, LogicalKeyboardKey.bracketRight},
+        type: I3Event.moveDown,
       ),
     ],
   );

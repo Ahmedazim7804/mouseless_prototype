@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+int globalId = 1000;
+
 enum NodeType { window, horizontalContainer, verticalContainer, root }
 
 abstract class LayoutNode extends Equatable {
