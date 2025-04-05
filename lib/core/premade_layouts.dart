@@ -20,7 +20,7 @@ class PremadeLayouts {
     return null;
   }
 
-  static (RootNode, WindowNode) get layout1 {
+  static WindowNode get layout1 {
     final layout = RootNode(
       id: 1,
       axis: LayoutAxis.vertical,
@@ -66,6 +66,6 @@ class PremadeLayouts {
 
     final activateWindow = getWindowById(layout, 7);
 
-    return (layout, activateWindow!);
+    return activateWindow!;
   }
 }

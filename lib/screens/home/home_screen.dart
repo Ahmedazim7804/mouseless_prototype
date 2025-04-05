@@ -19,8 +19,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   late StreamSubscription sub;
   late final I3LayoutController i3LayoutController = I3LayoutController(
-    root: PremadeLayouts.layout1.$1,
-    active: PremadeLayouts.layout1.$2,
+    active: PremadeLayouts.layout1,
   );
 
   @override
@@ -35,7 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
       } else if (event == I3Event.focusRight) {
         i3LayoutController.focusRight();
       } else if (event == I3Event.focusUp) {
-        i3LayoutController.focusUp();
+        i3LayoutController.moveRight();
       } else if (event == I3Event.focusDown) {
         i3LayoutController.focusDown();
       }

@@ -1,11 +1,20 @@
+import 'package:equatable/equatable.dart';
+
 enum NodeType { window, horizontalContainer, verticalContainer, root }
 
-abstract class LayoutNode {
+abstract class LayoutNode extends Equatable {
   ContainerNode? parent;
   final List<LayoutNode> children;
   final int id;
 
   LayoutNode({this.parent, this.children = const [], required this.id});
+
+  @override
+  List<Object?> get props => [
+    parent?.id,
+    children.map((e) => e.id).toList(),
+    id,
+  ];
 }
 
 enum LayoutAxis { horizontal, vertical }
@@ -28,6 +37,14 @@ class WindowNode extends LayoutNode {
       id: id,
     );
   }
+
+  @override
+  List<Object?> get props => [
+    parent.id,
+    children.map((e) => e.id).toList(),
+    id,
+    window,
+  ];
 }
 
 class ContainerNode extends LayoutNode {

@@ -2,10 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:mouseless/models/window.dart';
 
 class I3LayoutController extends ChangeNotifier {
-  final RootNode root;
   WindowNode active;
 
-  I3LayoutController({required this.root, required this.active});
+  RootNode get root {
+    LayoutNode node = active;
+    while (node.parent != null) {
+      node = node.parent!;
+    }
+    return node as RootNode;
+  }
+
+  I3LayoutController({required this.active});
 
   void _updateRecursiveNode(LayoutNode node, LayoutNode newNode) {
     final children = node.parent?.children;
@@ -41,7 +48,7 @@ class I3LayoutController extends ChangeNotifier {
     return _findParentWithAxisRecursively(axis, node: node.parent!);
   }
 
-  ContainerNode? _findGrandParentWithAxis(
+  (ContainerNode, int)? _findGrandParentWithAxis(
     LayoutAxis axis, {
     required WindowNode node,
   }) {
@@ -52,7 +59,11 @@ class I3LayoutController extends ChangeNotifier {
     }
 
     if (parent.parent != null) {
-      return parent.parent;
+      final index = parent.parent!.children.indexWhere(
+        (element) => element.id == parent.id,
+      );
+
+      return (parent.parent!, index);
     }
 
     return null;
@@ -73,7 +84,7 @@ class I3LayoutController extends ChangeNotifier {
     return null;
   }
 
-  LayoutNode findNodeClosestToIndex(
+  (LayoutNode, int) findNodeClosestToIndex(
     WindowNode node,
     ContainerNode container,
     LayoutDirection direction,
@@ -83,16 +94,20 @@ class I3LayoutController extends ChangeNotifier {
     final children = container.children;
     final len = children.length;
 
+    late final int newIndex;
+
     switch (direction) {
       case LayoutDirection.left:
-        return children[(index - 1) % len];
+        newIndex = (index - 1) % len;
       case LayoutDirection.right:
-        return children[(index + 1) % len];
+        newIndex = (index + 1) % len;
       case LayoutDirection.up:
-        return children[(index - 1) % len];
+        newIndex = (index - 1) % len;
       case LayoutDirection.down:
-        return children[(index + 1) % len];
+        newIndex = (index + 1) % len;
     }
+
+    return (children[newIndex], newIndex);
   }
 
   void _focusWindow({
@@ -112,7 +127,7 @@ class I3LayoutController extends ChangeNotifier {
               LayoutDirection.down => len,
               LayoutDirection.right => len,
             }) {
-      final grandParent = _findGrandParentWithAxis(axis, node: active);
+      final grandParent = _findGrandParentWithAxis(axis, node: active)?.$1;
 
       if (grandParent != null) {
         final firstChild = findFirstWindowChild(grandParent);
@@ -122,7 +137,8 @@ class I3LayoutController extends ChangeNotifier {
         }
       }
     } else if (active.parent.axis == axis) {
-      final closest = findNodeClosestToIndex(active, active.parent, direction);
+      final closest =
+          findNodeClosestToIndex(active, active.parent, direction).$1;
 
       if (closest is WindowNode) {
         active = closest;
@@ -162,6 +178,140 @@ class I3LayoutController extends ChangeNotifier {
 
   void focusRight() {
     _focusWindow(axis: LayoutAxis.horizontal, direction: LayoutDirection.right);
+    notifyListeners();
+  }
+
+  void _removeNodeFromParent(WindowNode node) {
+    final index = node.parent.children.indexWhere(
+      (element) => element.id == node.id,
+    );
+
+    if (index == -1) {
+      return;
+    }
+
+    node.parent.children.removeAt(index);
+  }
+
+  void _cleanLayout(LayoutNode? node) {
+    if (node == null) {
+      return;
+    }
+
+    bool modifiedInLastIteration = true;
+
+    while (modifiedInLastIteration) {
+      modifiedInLastIteration = false;
+
+      List<LayoutNode> stack = [node];
+      Set<LayoutNode> visited = {};
+
+      while (stack.isNotEmpty) {
+        LayoutNode current = stack.removeLast();
+
+        if (visited.contains(current)) {
+          continue;
+        }
+
+        bool modified = false;
+
+        if (current is ContainerNode) {
+          if (current.children.isEmpty) {
+            current.parent?.children.remove(current);
+            modified = true;
+          } else if (current.children.length == 1) {
+            current.parent?.children.remove(current);
+            current.parent?.children.add(
+              current.children.first..parent = current.parent,
+            );
+            modified = true;
+          }
+        }
+
+        if (modified) {
+          modifiedInLastIteration = true;
+          break;
+        } else {
+          for (int i = current.children.length - 1; i >= 0; i--) {
+            if (current.children[i] is ContainerNode) {
+              stack.add(current.children[i]);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  void moveRight() {
+    final len = active.parent.children.length;
+    final index = active.parent.children.indexWhere(
+      (element) => element.id == active.id,
+    );
+
+    // not last child in its parent and parent is horizontal
+    if (active.parent.axis == LayoutAxis.horizontal && index != len - 1) {
+      final res = findNodeClosestToIndex(
+        active,
+        active.parent,
+        LayoutDirection.right,
+      );
+
+      if (res.$1 is ContainerNode) {
+        _removeNodeFromParent(active);
+        res.$1.children.add(active..parent = res.$1 as ContainerNode);
+        active = res.$1.children.last as WindowNode;
+      } else {
+        active.parent.children[index] = res.$1;
+        active.parent.children[res.$2] = active;
+      }
+    } else {
+      final result = _findGrandParentWithAxis(
+        LayoutAxis.horizontal,
+        node: active,
+      );
+
+      final grandParent = result?.$1;
+      final indexOfAncestorContainerActiveWindowParentInGrandParent =
+          result?.$2;
+
+      if (grandParent == null) {
+        return;
+      }
+
+      final ancestor =
+          grandParent
+              .children[indexOfAncestorContainerActiveWindowParentInGrandParent!];
+
+      if (ancestor.id == active.parent.id ||
+          indexOfAncestorContainerActiveWindowParentInGrandParent ==
+              grandParent.children.length - 1) {
+        _removeNodeFromParent(active);
+        grandParent.children.add(active..parent = grandParent);
+        active = grandParent.children.last as WindowNode;
+      } else {
+        final sibling =
+            grandParent
+                .children[indexOfAncestorContainerActiveWindowParentInGrandParent +
+                1];
+        final newContainer = ContainerNode(
+          axis: LayoutAxis.horizontal,
+          id: grandParent.children.length,
+          parent: grandParent,
+          children: [active, sibling],
+        );
+
+        grandParent
+                .children[indexOfAncestorContainerActiveWindowParentInGrandParent +
+                1] =
+            newContainer;
+
+        active = newContainer.children[0] as WindowNode;
+      }
+    }
+
+    // last child in its parent or parent is vertical
+
+    _cleanLayout(root);
     notifyListeners();
   }
 }
