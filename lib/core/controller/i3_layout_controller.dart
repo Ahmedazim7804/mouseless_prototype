@@ -232,6 +232,18 @@ class I3LayoutController extends ChangeNotifier {
             );
             modified = true;
           }
+        } else if (current is RootNode) {
+          if (current.children.length == 1) {
+            final child = current.children.first;
+
+            if (child is ContainerNode) {
+              current.children.clear();
+              for (var grandChild in child.children) {
+                current.children.add(grandChild..parent = current);
+              }
+            }
+            modified = true;
+          }
         }
 
         if (modified) {
@@ -257,7 +269,32 @@ class I3LayoutController extends ChangeNotifier {
       (element) => element.id == active.id,
     );
 
-    // not last child in its parent and parent is horizontal
+    final indexChange = switch (direction) {
+      LayoutDirection.left => 0,
+      LayoutDirection.right => 1,
+      LayoutDirection.up => 0,
+      LayoutDirection.down => 1,
+    };
+
+    /*
+     CASES
+     1 active's parent has same axis as the axis it is trying to move
+       1.1 active is not at extreme end of its parent
+         SOLUTION => i get the closest node in the direction and swap with it
+       1.2 active is at extreme end of its parent
+         SOLUTION => // a. if active's parent is root node, return (because we are at the end of the layout)
+                     b. find the grand parent with same axis
+                     c. if found, move active to the grand parent
+                     d. if not found, create a new root with the axis in which we are trying to move, and make the old root a child of the new root
+     2. active's parent has different axis than the axis it is trying to move
+       SOLUTION => it does not matter if it is at extreme end or not/
+                   a. find the grand parent with same axis
+                   b. if found, move active to the grand parent
+                   c. if not found, create a new root with the axis in which we are trying to move, and make the old root a child of the new root
+
+    */
+
+    // CASE 1.1
     if (active.parent.axis == axis &&
         index !=
             switch (direction) {
@@ -274,68 +311,83 @@ class I3LayoutController extends ChangeNotifier {
 
       if (res.$1 is ContainerNode) {
         _removeNodeFromParent(active);
-        res.$1.children.add(active..parent = res.$1 as ContainerNode);
-        active = res.$1.children.last as WindowNode;
+        res.$1.children.insert(0, active..parent = res.$1 as ContainerNode);
+        active = res.$1.children.first as WindowNode;
       } else {
         active.parent.children[index] = res.$1;
         active.parent.children[res.$2] = active;
       }
-    } else {
-      final result = _findGrandParentWithAxis(axis, node: active);
+    } else if (active.parent.axis != axis) {
+      // CASE 2
+      final parentRes = _findGrandParentWithAxis(axis, node: active);
 
-      final grandParent = result?.$1;
-      final indexOfAncestorContainerActiveWindowParentInGrandParent =
-          result?.$2;
-
-      // no parent with same axis found till root, grandparent is the root and has different axis
-      if (grandParent == null) {
+      if (parentRes != null) {
+        _removeNodeFromParent(active);
+        parentRes.$1.children.insert(
+          parentRes.$2 + indexChange,
+          active..parent = parentRes.$1,
+        );
+        active =
+            parentRes.$1.children[parentRes.$2 + indexChange] as WindowNode;
+      } else {
+        // no parent with same axis found till root
+        _removeNodeFromParent(active);
+        final root = this.root;
         globalId++;
+
+        final newRoot = RootNode(id: root.id, axis: axis, children: []);
+
         final newContainerNode = ContainerNode(
-          axis: axis,
+          axis: root.axis,
           id: globalId,
-          parent: root,
+          parent: newRoot,
           children: root.children,
         );
 
-        root.children.clear();
-        root.children.add(newContainerNode);
-        root.children.add(active..parent = newContainerNode);
+        newRoot.children.add(newContainerNode..parent = newRoot);
+        newRoot.children.add(active..parent = newRoot);
 
-        active = root.children.last as WindowNode;
+        active = newRoot.children.last as WindowNode;
+      }
+    } else {
+      // CASE 1.2
+
+      final parent = _findGrandParentWithAxis(axis, node: active);
+
+      if (active.parent is RootNode) {
+        return;
+      }
+
+      if (parent == null) {
+        _removeNodeFromParent(active);
+        final root = this.root;
+        globalId++;
+
+        final newRoot = RootNode(id: root.id, axis: axis, children: []);
+
+        final newContainerNode = ContainerNode(
+          axis: root.axis,
+          id: globalId,
+          parent: newRoot,
+          children: root.children,
+        );
+
+        newRoot.children.add(newContainerNode..parent = newRoot);
+        newRoot.children.add(active..parent = newRoot);
+
+        active = newRoot.children.last as WindowNode;
+        // no parent with same axis found till root
       } else {
-        final ancestor =
-            grandParent
-                .children[indexOfAncestorContainerActiveWindowParentInGrandParent!];
+        _removeNodeFromParent(active);
 
-        if (ancestor.id == active.parent.id ||
-            indexOfAncestorContainerActiveWindowParentInGrandParent ==
-                grandParent.children.length - 1) {
-          _removeNodeFromParent(active);
-          grandParent.children.add(active..parent = grandParent);
-          active = grandParent.children.last as WindowNode;
-        } else {
-          final sibling =
-              grandParent
-                  .children[indexOfAncestorContainerActiveWindowParentInGrandParent +
-                  1];
-          final newContainer = ContainerNode(
-            axis: axis,
-            id: grandParent.children.length,
-            parent: grandParent,
-            children: [active, sibling],
-          );
+        parent.$1.children.insert(
+          parent.$2 + indexChange,
+          active..parent = parent.$1,
+        );
 
-          grandParent
-                  .children[indexOfAncestorContainerActiveWindowParentInGrandParent +
-                  1] =
-              newContainer;
-
-          active = newContainer.children[0] as WindowNode;
-        }
+        active = parent.$1.children[parent.$2 + indexChange] as WindowNode;
       }
     }
-
-    // last child in its parent or parent is vertical
 
     _cleanLayout(root);
   }

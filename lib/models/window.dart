@@ -50,7 +50,7 @@ class WindowNode extends LayoutNode {
 }
 
 class ContainerNode extends LayoutNode {
-  final LayoutAxis axis;
+  LayoutAxis axis;
   @override
   ContainerNode({
     required this.axis,
