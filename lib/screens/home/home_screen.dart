@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mouseless/core/controller/i3_layout_controller.dart';
 import 'package:mouseless/core/controller/keys_controller.dart';
@@ -26,6 +25,60 @@ class _HomeScreenState extends State<HomeScreen> {
   late final I3LayoutController i3LayoutController = I3LayoutController(
     active: PremadeLayouts.layout1,
   );
+  final layout2 = PremadeLayouts.layout2;
+  bool achieved = false;
+
+  bool areLayoutsSame(LayoutNode? node1, LayoutNode? node2) {
+    // Base case 1: Both are null, considered the same.
+    if (node1 == null && node2 == null) {
+      return true;
+    }
+
+    // Base case 2: One is null, the other isn't, considered different.
+    if (node1 == null || node2 == null) {
+      return false;
+    }
+
+    // Base case 3: Nodes have different runtime types, considered different.
+    if (node1.runtimeType != node2.runtimeType) {
+      return false;
+    }
+
+    // --- Type-specific comparison ---
+
+    // Case 1: Both are WindowNodes
+    if (node1 is WindowNode && node2 is WindowNode) {
+      // Compare only the 'window' property as per requirement 1.
+      return node1.window == node2.window;
+    }
+
+    // Case 2: Both are ContainerNodes (includes RootNode)
+    if (node1 is ContainerNode && node2 is ContainerNode) {
+      // Check axis equality (requirement 2 & 3).
+      if (node1.axis != node2.axis) {
+        return false;
+      }
+
+      // Check if they have the same number of children (requirement 3).
+      if (node1.children.length != node2.children.length) {
+        return false;
+      }
+
+      // Recursively check each child pair (requirement 3).
+      for (int i = 0; i < node1.children.length; i++) {
+        if (!areLayoutsSame(node1.children[i], node2.children[i])) {
+          // If any child pair doesn't match, the containers are not the same.
+          return false;
+        }
+      }
+
+      // If all checks pass (axis, child count, and all children recursively match),
+      // the containers are considered the same.
+      return true;
+    }
+
+    return true;
+  }
 
   @override
   void initState() {
@@ -59,6 +112,62 @@ class _HomeScreenState extends State<HomeScreen> {
         i3LayoutController.moveUp();
       } else if (event == I3Event.moveDown) {
         i3LayoutController.moveDown();
+      }
+
+      if (areLayoutsSame(i3LayoutController.root, layout2.root)) {
+        sub.cancel();
+        achieved = true;
+
+        if (!mounted || !context.mounted) return;
+
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              backgroundColor: Color(0xff282828), // Dark background color
+              title: Row(
+                children: [
+                  Icon(
+                    Icons.celebration, // Example icon: party popper
+                    color: Colors.yellowAccent,
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    'Congratulations!',
+                    style: TextStyle(color: Colors.white), // White title text
+                  ),
+                ],
+              ),
+              content: Row(
+                children: [
+                  Icon(
+                    Icons.check_circle_outline, // Example icon: checkmark
+                    color: Colors.greenAccent,
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    'You won!',
+                    style: TextStyle(color: Colors.white), // White content text
+                  ),
+                ],
+              ),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Close the dialog
+                    i3LayoutController.setNewLayout(PremadeLayouts.layout1);
+                  },
+                  style: TextButton.styleFrom(
+                    foregroundColor:
+                        Colors.blueAccent, // Accent color for the button text
+                  ),
+                  child: Text('OK'),
+                ),
+              ],
+            );
+          },
+        );
       }
     });
   }
@@ -111,12 +220,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 mainAxisSize: MainAxisSize.max,
                 children: [
                   _Simulation(),
-                  _Simulation(
-                    fixedLayout: (
-                      i3LayoutController.root,
-                      i3LayoutController.active,
-                    ),
-                  ),
+                  _Simulation(fixedLayout: (layout2.root!, layout2)),
                 ].spacedBy(width: 16),
               ),
             ),
@@ -263,6 +367,7 @@ class _Simulation extends StatelessWidget {
                               active: fixedLayout!.$2,
                             );
                           }
+
                           return Consumer<I3LayoutController>(
                             builder: (_, controller, ___) {
                               return SimulationWindowsGridWidget(

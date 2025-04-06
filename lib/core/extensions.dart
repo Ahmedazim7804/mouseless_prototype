@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:mouseless/models/layout_node.dart';
 
 extension ListWidgetExt on List<Widget> {
   // make the method take a optional parameter for spacing widget
@@ -42,5 +43,15 @@ extension ListWidgetExt on List<Widget> {
         );
       }
     });
+  }
+}
+
+extension LayoutNodeExt on LayoutNode {
+  RootNode? get root {
+    LayoutNode node = this;
+    while (node.parent != null) {
+      node = node.parent!;
+    }
+    return node as RootNode;
   }
 }
