@@ -1,5 +1,5 @@
 import 'package:mouseless/core/extensions.dart';
-import 'package:mouseless/models/window.dart';
+import 'package:mouseless/models/layout_node.dart';
 
 class I3Manager {
   // static List<Window> focusLeftWindow(List<Window> windows) {

@@ -1,4 +1,4 @@
-import 'package:mouseless/models/window.dart';
+import 'package:mouseless/models/layout_node.dart';
 
 class PremadeLayouts {
   static WindowNode? getWindowById(LayoutNode? node, int id) {

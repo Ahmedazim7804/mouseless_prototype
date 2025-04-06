@@ -20,35 +20,47 @@ class _RootScaffoldState extends State<RootScaffold> {
   late final keysController = KeysController<I3Event>(
     recognizableKeybindings: [
       Keybinding<I3Event>(
-        keys: {LogicalKeyboardKey.superKey, LogicalKeyboardKey.keyB},
+        keys: {LogicalKeyboardKey.superKey, LogicalKeyboardKey.keyJ},
         type: I3Event.focusLeft,
       ),
       Keybinding<I3Event>(
-        keys: {LogicalKeyboardKey.superKey, LogicalKeyboardKey.keyN},
+        keys: {LogicalKeyboardKey.superKey, LogicalKeyboardKey.keyK},
         type: I3Event.focusDown,
       ),
       Keybinding<I3Event>(
-        keys: {LogicalKeyboardKey.superKey, LogicalKeyboardKey.keyM},
+        keys: {LogicalKeyboardKey.superKey, LogicalKeyboardKey.keyL},
         type: I3Event.focusUp,
       ),
       Keybinding<I3Event>(
-        keys: {LogicalKeyboardKey.superKey, LogicalKeyboardKey.comma},
+        keys: {LogicalKeyboardKey.superKey, LogicalKeyboardKey.semicolon},
         type: I3Event.focusRight,
       ),
       Keybinding<I3Event>(
-        keys: {LogicalKeyboardKey.superKey, LogicalKeyboardKey.minus},
+        keys: {
+          LogicalKeyboardKey.superKey,
+          LogicalKeyboardKey.shiftLeft,
+          LogicalKeyboardKey.keyJ,
+        },
         type: I3Event.moveLeft,
       ),
       Keybinding<I3Event>(
-        keys: {LogicalKeyboardKey.superKey, LogicalKeyboardKey.equal},
+        keys: {LogicalKeyboardKey.superKey, LogicalKeyboardKey.colon},
         type: I3Event.moveRight,
       ),
       Keybinding<I3Event>(
-        keys: {LogicalKeyboardKey.superKey, LogicalKeyboardKey.bracketLeft},
+        keys: {
+          LogicalKeyboardKey.superKey,
+          LogicalKeyboardKey.shiftLeft,
+          LogicalKeyboardKey.keyL,
+        },
         type: I3Event.moveUp,
       ),
       Keybinding<I3Event>(
-        keys: {LogicalKeyboardKey.superKey, LogicalKeyboardKey.bracketRight},
+        keys: {
+          LogicalKeyboardKey.superKey,
+          LogicalKeyboardKey.shiftLeft,
+          LogicalKeyboardKey.keyK,
+        },
         type: I3Event.moveDown,
       ),
     ],
@@ -79,60 +91,6 @@ class _RootScaffoldState extends State<RootScaffold> {
           ),
         ),
       ),
-      // bottomNavigationBar: Theme(
-      //   data: Theme.of(context).copyWith(
-      //     splashColor: Colors.transparent,
-      //     splashFactory: NoSplash.splashFactory,
-      //   ),
-      //   child: BottomNavigationBar(
-      //     backgroundColor: Colors.transparent,
-      //     showSelectedLabels: false,
-      //     showUnselectedLabels: false,
-      //     elevation: 0,
-      //     currentIndex: widget.navigationShell.currentIndex,
-      //     onTap: (index) {
-      //       widget.navigationShell.goBranch(index);
-      //     },
-      //     items: [
-      //       BottomNavigationBarItem(
-      //         icon: SvgPicture.asset(
-      //           'assets/icons/chat_screen.svg',
-      //           colorFilter: ColorFilter.mode(
-      //             widget.navigationShell.currentIndex == 0
-      //                 ? selectedIconColor
-      //                 : unselectedIconColor,
-      //             BlendMode.srcIn,
-      //           ),
-      //         ),
-      //         label: 'Chat',
-      //       ),
-      //       BottomNavigationBarItem(
-      //         icon: SvgPicture.asset(
-      //           FlowbeeIcons.discover,
-      //           colorFilter: ColorFilter.mode(
-      //             widget.navigationShell.currentIndex == 1
-      //                 ? selectedIconColor
-      //                 : unselectedIconColor,
-      //             BlendMode.srcIn,
-      //           ),
-      //         ),
-      //         label: 'Discover',
-      //       ),
-      //       BottomNavigationBarItem(
-      //         icon: SvgPicture.asset(
-      //           'assets/icons/sessions_list.svg',
-      //           colorFilter: ColorFilter.mode(
-      //             widget.navigationShell.currentIndex == 2
-      //                 ? selectedIconColor
-      //                 : unselectedIconColor,
-      //             BlendMode.srcIn,
-      //           ),
-      //         ),
-      //         label: 'Sessions',
-      //       ),
-      //     ],
-      //   ),
-      // ),
     );
   }
 }

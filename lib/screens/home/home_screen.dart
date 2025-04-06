@@ -6,9 +6,11 @@ import 'package:mouseless/core/controller/keys_controller.dart';
 import 'package:mouseless/core/extensions.dart';
 import 'package:mouseless/core/premade_layouts.dart';
 import 'package:mouseless/models/keybinding.dart';
-import 'package:mouseless/models/window.dart';
+import 'package:mouseless/models/layout_node.dart';
 import 'package:mouseless/screens/components/pressed_keys_list.dart';
+import 'package:mouseless/screens/components/sidebar/sidebar.dart';
 import 'package:provider/provider.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -26,6 +28,13 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ShowCaseWidget.of(
+        context,
+      ).startShowCase([grabShowcaseKey, unGrabShowcaseKey]);
+    });
+
     sub = Provider.of<KeysController<I3Event>>(
       context,
       listen: false,

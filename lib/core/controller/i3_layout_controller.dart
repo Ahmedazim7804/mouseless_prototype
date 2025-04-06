@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mouseless/models/window.dart';
+import 'package:mouseless/models/layout_node.dart';
 
 class I3LayoutController extends ChangeNotifier {
   WindowNode active;
