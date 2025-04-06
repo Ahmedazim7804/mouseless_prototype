@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mouseless/core/controller/i3_layout_controller.dart';
 import 'package:mouseless/core/controller/keys_controller.dart';
@@ -7,6 +8,7 @@ import 'package:mouseless/core/extensions.dart';
 import 'package:mouseless/core/premade_layouts.dart';
 import 'package:mouseless/models/keybinding.dart';
 import 'package:mouseless/models/layout_node.dart';
+import 'package:mouseless/screens/components/keys_history_widget.dart';
 import 'package:mouseless/screens/components/pressed_keys_list.dart';
 import 'package:mouseless/screens/components/sidebar/sidebar.dart';
 import 'package:provider/provider.dart';
@@ -38,7 +40,9 @@ class _HomeScreenState extends State<HomeScreen> {
     sub = Provider.of<KeysController<I3Event>>(
       context,
       listen: false,
-    ).keybindingEvents.listen((event) {
+    ).keybindingEvents.listen((keybinding) {
+      final event = keybinding.type;
+
       if (event == I3Event.focusLeft) {
         i3LayoutController.focusLeft();
       } else if (event == I3Event.focusRight) {
@@ -123,9 +127,7 @@ class _HomeScreenState extends State<HomeScreen> {
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Column(
-                  children: [Text("History", style: TextStyle(fontSize: 20))],
-                ),
+                KeysHistoryWidget(),
                 Expanded(
                   child: LayoutBuilder(
                     builder: (context, con) {

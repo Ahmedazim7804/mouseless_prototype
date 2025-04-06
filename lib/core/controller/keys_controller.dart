@@ -28,8 +28,8 @@ class KeysController<T> extends ChangeNotifier {
   final StreamController<KeyStatusUpdate> _keyStatusStreamController =
       StreamController<KeyStatusUpdate>.broadcast();
 
-  final StreamController<T> _keybindingEventStreamController =
-      StreamController<T>.broadcast();
+  final StreamController<Keybinding<T>> _keybindingEventStreamController =
+      StreamController<Keybinding<T>>.broadcast();
 
   final Set<LogicalKeyboardKey> _pressedKeys =
       LinkedHashSet<LogicalKeyboardKey>();
@@ -38,7 +38,8 @@ class KeysController<T> extends ChangeNotifier {
 
   Stream<KeyStatusUpdate> get keyStatusStream =>
       _keyStatusStreamController.stream;
-  Stream<T> get keybindingEvents => _keybindingEventStreamController.stream;
+  Stream<Keybinding<T>> get keybindingEvents =>
+      _keybindingEventStreamController.stream;
 
   Keybinding<T>? _activeKeybinding;
   bool needsBindingCheck = false;
@@ -101,7 +102,7 @@ class KeysController<T> extends ChangeNotifier {
       _activeKeybinding = longestRecognizedKeybinding;
 
       if (_activeKeybinding != null) {
-        _keybindingEventStreamController.sink.add(_activeKeybinding!.type);
+        _keybindingEventStreamController.sink.add(_activeKeybinding!);
       }
     }
   }
