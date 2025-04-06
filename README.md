@@ -1,4 +1,4 @@
-# Mouseless
+# Mouseless (Prototype)
 
 Mouseless is a Flutter-based application designed to enhance productivity by enabling users to navigate and interact with their system layouts using only the keyboard. The app simulates a tiling window manager experience, allowing users to focus, move, and manage windows efficiently without relying on a mouse.
 
@@ -11,6 +11,9 @@ Mouseless is a Flutter-based application designed to enhance productivity by ena
 - **Customizable Layouts**: Support for predefined layouts and the ability to modify them.
 
 ## Demo
+You can check out the Figma Prototype [HERE](https://www.figma.com/proto/QKm54iGlh6fu5STQi3euIC/Mouseless?node-id=87-2493&t=QBNDyrttu8F7OD77-1)
+
+https://github.com/user-attachments/assets/4b0d01bd-8d98-414a-b1fc-38d46e49e7e7
 
 ## Getting Started
 
