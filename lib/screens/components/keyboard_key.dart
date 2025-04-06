@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mouseless/core/controller/keys_controller.dart';
-import 'package:provider/provider.dart';
 
 class KeyboardKeyWidget extends StatelessWidget {
   const KeyboardKeyWidget({

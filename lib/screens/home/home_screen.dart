@@ -38,7 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
     sub = Provider.of<KeysController<I3Event>>(
       context,
       listen: false,
-    ).streamEvents.listen((event) {
+    ).keybindingEvents.listen((event) {
       if (event == I3Event.focusLeft) {
         i3LayoutController.focusLeft();
       } else if (event == I3Event.focusRight) {
